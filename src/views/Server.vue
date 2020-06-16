@@ -1,23 +1,31 @@
 <template>
   <div>
-    <p>{{server.name}}</p>
+    <p>{{ server.name }}</p>
     <div v-if="userId === server.creator">
-      <p @click="isVisible = !isVisible">{{isVisible ? "-" : "+"}}</p>
+      <p @click="isVisible = !isVisible">{{ isVisible ? "-" : "+" }}</p>
       <form v-if="isVisible" @submit.prevent="createChannel(name, selected, server._id)">
         <input type="text" v-model="name" />
         <select v-model="selected">
-          <option v-for="selection in selections" :key="selection">{{selection}}</option>
+          <option v-for="selection in selections" :key="selection">
+            {{
+            selection
+            }}
+          </option>
         </select>
         <button type="submit">Create</button>
       </form>
     </div>
     <div>
       <div v-for="channel in server.channels" :key="channel._id">
-        <p @click="showChannel(channel._id)">{{channel.name}}</p>
+        <p
+          v-if="channel.accesses.indexOf(userId) !== -1"
+          @click="showChannel(channel._id)"
+        >{{ channel.name }}</p>
       </div>
     </div>
     <div v-if="channelSelected.selected">
-      <p>{{channelSelected.name}}</p>
+      <p>{{ channelSelected.name }}</p>
+      <p v-for="message in channelSelected.messages" :key="message._id">{{message.text}}</p>
       <form @submit.prevent="sendMessage(message)">
         <input type="text" v-model="message" />
         <button type="submit">Send</button>
@@ -26,8 +34,27 @@
   </div>
 </template>
 <script>
+import Vue from "vue";
+import VueSocketIOExt from "vue-socket.io-extended";
+import io from "socket.io-client";
+
+const socket = io("http://localhost:3000/", {
+  transports: ["websocket"],
+  query: {
+    token: localStorage.getItem("token")
+  }
+});
+console.log(localStorage.getItem("token"));
+
+Vue.use(VueSocketIOExt, socket);
+
 export default {
   name: "Server",
+  sockets: {
+    RES_MESSAGE(msg) {
+      this.channelSelected.messages.push({ _id: msg._id, text: msg.text });
+    }
+  },
   data() {
     return {
       server: {},
@@ -71,8 +98,11 @@ export default {
       });
     },
     sendMessage(message) {
+      this.$socket.client.emit("MESSAGE", {
+        channel: this.channelSelected.id,
+        text: message
+      });
       this.message = "";
-      console.log(message);
     }
   },
   computed: {
