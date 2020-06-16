@@ -10,7 +10,7 @@
 <script>
 export default {
   computed: {
-    isLoggedIn: function() {
+    isLoggedIn() {
       return this.$store.getters.isLoggedIn;
     }
   },
@@ -20,6 +20,7 @@ export default {
     }
   },
   created() {
+    this.$store.dispatch("getUser");
     this.$http.interceptors.response.use(undefined, function(err) {
       return new Promise(function() {
         if (err.status === 401 && err.config && !err.config.__isRetryRequest) {

@@ -8,15 +8,18 @@ export default new Vuex.Store({
   state: {
     status: "",
     token: localStorage.getItem("token") || "",
-    user: {},
+    user: {
+      servers: [],
+    },
   },
   mutations: {
     auth_request(state) {
       state.status = "loading";
     },
-    auth_success(state, token, user) {
+    auth_success(state, { token, user }) {
       state.status = "success";
       state.token = token;
+      console.log(user);
       state.user = user;
     },
     auth_error(state) {
@@ -25,6 +28,12 @@ export default new Vuex.Store({
     logout(state) {
       state.status = "";
       state.token = "";
+      state.user = {
+        servers: [],
+      };
+    },
+    get_user(state, user) {
+      state.user = user;
     },
   },
   actions: {
@@ -41,7 +50,7 @@ export default new Vuex.Store({
             const user = resp.data.user;
             localStorage.setItem("token", token);
             axios.defaults.headers.common["Authorization"] = "Bearer " + token;
-            commit("auth_success", token, user);
+            commit("auth_success", { token, user });
             resolve(resp);
           })
           .catch((err) => {
@@ -77,9 +86,42 @@ export default new Vuex.Store({
         resolve();
       });
     },
+    getUser({ commit }) {
+      return new Promise((resolve, reject) => {
+        axios({
+          url: "http://localhost:3000/api/user/profile",
+          method: "GET",
+        })
+          .then((resp) => {
+            commit("get_user", resp.data);
+            resolve(resp);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    },
+    // eslint-disable-next-line no-unused-vars
+    createServer({ commit }, name) {
+      return new Promise((resolve, reject) => {
+        axios({
+          url: "http://localhost:3000/api/server/",
+          data: { name: name },
+          method: "POST",
+        })
+          .then((resp) => {
+            resolve(resp);
+          })
+          .catch((err) => {
+            reject(err);
+          });
+      });
+    },
   },
   getters: {
     isLoggedIn: (state) => !!state.token,
     authStatus: (state) => state.status,
+    getServers: (state) => state.user.servers,
+    getUserId: (state) => state.user._id,
   },
 });
