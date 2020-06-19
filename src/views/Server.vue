@@ -3,7 +3,7 @@
     <p>{{ server.name }}</p>
     <div v-if="userId === server.creator">
       <p @click="isVisible = !isVisible">{{ isVisible ? "-" : "+" }}</p>
-      <form v-if="isVisible" @submit.prevent="createChannel(name, selected, server._id)">
+      <form v-if="isVisible" @submit.prevent="createChannel(name, selected, users, server._id)">
         <input type="text" v-model="name" />
         <select v-model="selected">
           <option v-for="selection in selections" :key="selection">
@@ -12,6 +12,10 @@
             }}
           </option>
         </select>
+        <div v-for="user in server.accesses" :key="user">
+          <span>{{user}}</span>
+          <input type="checkbox" v-model="users" :value="user" />
+        </div>
         <button type="submit">Create</button>
       </form>
     </div>
@@ -61,6 +65,7 @@ export default {
       isVisible: false,
       name: "",
       selected: "TEXT",
+      users: [],
       selections: ["TEXT", "VOICE", "BOTH"],
       message: "",
       channelSelected: {
@@ -79,11 +84,12 @@ export default {
     }
   },
   methods: {
-    createChannel(name, selected, serverId) {
+    createChannel(name, selected, users, serverId) {
       this.$http
         .post("http://localhost:3000/api/channel/", {
           name: name,
           server: serverId,
+          users: users,
           type: selected
         })
         .then(data => (this.server = data.data));
